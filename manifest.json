@@ -1,0 +1,19 @@
+{
+  "name": "Photonote",
+  "short_name": "Photonote",
+  "description": "Ta foton och lägg till anteckningar",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111118",
+  "theme_color": "#533483",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
