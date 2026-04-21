@@ -17,6 +17,7 @@
 
   <header>
     <h1>Photonote</h1>
+    <span class="version">v3</span>
   </header>
 
   <main id="gallery" class="gallery"></main>
@@ -28,44 +29,36 @@
     </svg>
   </button>
 
-  <!-- Modal: ta foto -->
-  <div id="capture-modal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Nytt foto</h2>
-      </div>
+  <!-- Dolda file inputs utanför modal så de alltid finns i DOM -->
+  <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none">
+  <input type="file" id="gallery-input" accept="image/*" style="display:none">
 
-      <!-- Bildval: kamera eller galleri -->
+  <!-- Modal: ta foto -->
+  <div id="capture-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header"><h2>Nytt foto</h2></div>
+
       <div id="source-picker" class="source-picker">
-        <label class="source-btn">
-          <input type="file" id="camera-input" accept="image/*" capture="environment">
+        <button id="open-camera-btn" class="source-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="28" height="28">
             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
             <circle cx="12" cy="13" r="4"/>
           </svg>
           <span>Ta foto</span>
-        </label>
-        <label class="source-btn">
-          <input type="file" id="gallery-input" accept="image/*">
+        </button>
+        <button id="open-gallery-btn" class="source-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="28" height="28">
             <rect x="3" y="3" width="18" height="18" rx="2"/>
             <circle cx="8.5" cy="8.5" r="1.5"/>
             <polyline points="21 15 16 10 5 21"/>
           </svg>
           <span>Galleri</span>
-        </label>
+        </button>
       </div>
 
-      <!-- Förhandsgranskning -->
-      <div class="preview-area hidden" id="preview-area">
+      <div id="preview-area" class="preview-area hidden">
         <img id="preview-img" alt="Förhandsgranskning">
-        <button id="retake-btn" class="retake-btn" aria-label="Välj nytt foto">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <polyline points="1 4 1 10 7 10"/>
-            <path d="M3.51 15a9 9 0 1 0 .49-4"/>
-          </svg>
-          Välj nytt
-        </button>
+        <button id="retake-btn" class="retake-btn">Välj nytt</button>
       </div>
 
       <div class="note-section">
@@ -79,7 +72,7 @@
   </div>
 
   <!-- Modal: visa/redigera -->
-  <div id="view-modal" class="modal hidden" role="dialog" aria-modal="true">
+  <div id="view-modal" class="modal hidden">
     <div class="modal-content view-modal-content">
       <img id="view-img" alt="Foto">
       <div class="note-section">

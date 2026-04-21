@@ -9,16 +9,15 @@ async function openDB() {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = (e) => {
       const d = e.target.result;
-      if (!d.objectStoreNames.contains(STORE)) {
+      if (!d.objectStoreNames.contains(STORE))
         d.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
-      }
     };
     req.onsuccess = (e) => resolve(e.target.result);
     req.onerror = (e) => reject(e.target.error);
   });
 }
 
-function tx(mode, fn) {
+function dbOp(mode, fn) {
   return new Promise((resolve, reject) => {
     const t = db.transaction(STORE, mode);
     const s = t.objectStore(STORE);
@@ -28,81 +27,78 @@ function tx(mode, fn) {
   });
 }
 
-const getAll = () => tx('readonly', s => s.getAll());
-const getOne = (id) => tx('readonly', s => s.get(id));
-const addEntry = (entry) => tx('readwrite', s => s.add(entry));
-const putEntry = (entry) => tx('readwrite', s => s.put(entry));
-const delEntry = (id) => tx('readwrite', s => s.delete(id));
+const getAll = () => dbOp('readonly', s => s.getAll());
+const getOne = (id) => dbOp('readonly', s => s.get(id));
+const addEntry = (e) => dbOp('readwrite', s => s.add(e));
+const putEntry = (e) => dbOp('readwrite', s => s.put(e));
+const delEntry = (id) => dbOp('readwrite', s => s.delete(id));
 
-function readFileAsDataURL(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);
-    reader.readAsDataURL(file);
+function readFile(file) {
+  return new Promise(resolve => {
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result);
+    r.readAsDataURL(file);
   });
 }
 
-function compressImage(dataUrl, maxDim = 1400, quality = 0.82) {
-  return new Promise((resolve) => {
+function compress(dataUrl, maxDim = 1400, q = 0.82) {
+  return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
       const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL('image/jpeg', q));
     };
     img.src = dataUrl;
   });
 }
 
 function formatDate(ts) {
-  return new Date(ts).toLocaleDateString('sv-SE', {
-    year: 'numeric', month: 'long', day: 'numeric'
-  });
+  return new Date(ts).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-function escHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+function esc(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 async function renderGallery() {
   const gallery = document.getElementById('gallery');
   const entries = (await getAll()).reverse();
-
   if (entries.length === 0) {
-    gallery.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📷</div>
-        <p>Inga foton ännu</p>
-        <small>Tryck på kameraknappen nedtill för att komma igång</small>
-      </div>`;
+    gallery.innerHTML = `<div class="empty-state"><div class="empty-icon">📷</div><p>Inga foton ännu</p><small>Tryck på kameraknappen nedtill för att komma igång</small></div>`;
     return;
   }
-
   gallery.innerHTML = entries.map(e => `
     <article class="card" data-id="${e.id}">
-      <div class="card-img-wrap">
-        <img src="${e.image}" alt="Foto" loading="lazy">
-      </div>
+      <div class="card-img-wrap"><img src="${e.image}" alt="Foto" loading="lazy"></div>
       <div class="card-body">
-        <p class="card-note">${e.note ? escHtml(e.note) : '<em>Ingen anteckning</em>'}</p>
+        <p class="card-note">${e.note ? esc(e.note) : '<em>Ingen anteckning</em>'}</p>
         <time class="card-date">${formatDate(e.timestamp)}</time>
       </div>
-    </article>
-  `).join('');
-
-  gallery.querySelectorAll('.card').forEach(card => {
-    card.addEventListener('click', () => openViewModal(Number(card.dataset.id)));
-  });
+    </article>`).join('');
+  gallery.querySelectorAll('.card').forEach(card =>
+    card.addEventListener('click', () => openViewModal(Number(card.dataset.id)))
+  );
 }
 
-// ── Capture modal ─────────────────────────────────────────
+// ── Modal helpers ─────────────────────────────────────
+function showModal(id) {
+  const modal = document.getElementById(id);
+  modal.classList.remove('hidden');
+  requestAnimationFrame(() => modal.querySelector('.modal-content').classList.add('slide-up'));
+}
+
+function hideModal(id) {
+  const modal = document.getElementById(id);
+  const content = modal.querySelector('.modal-content');
+  content.classList.remove('slide-up');
+  content.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
+}
+
+// ── Capture modal ─────────────────────────────────────
 let pendingImage = null;
 
 function openCaptureModal() {
@@ -116,21 +112,19 @@ function openCaptureModal() {
   showModal('capture-modal');
 }
 
-function closeCaptureModal() {
-  hideModal('capture-modal');
-}
+function closeCaptureModal() { hideModal('capture-modal'); }
 
-async function handleFileSelected(file) {
+async function handleFile(file) {
   if (!file) return;
-  const raw = await readFileAsDataURL(file);
-  pendingImage = await compressImage(raw);
+  const raw = await readFile(file);
+  pendingImage = await compress(raw);
   document.getElementById('preview-img').src = pendingImage;
   document.getElementById('source-picker').classList.add('hidden');
   document.getElementById('preview-area').classList.remove('hidden');
   document.getElementById('save-btn').disabled = false;
 }
 
-// ── View modal ────────────────────────────────────────────
+// ── View modal ────────────────────────────────────────
 let currentEntry = null;
 
 async function openViewModal(id) {
@@ -142,48 +136,33 @@ async function openViewModal(id) {
   showModal('view-modal');
 }
 
-function closeViewModal() {
-  hideModal('view-modal');
-  currentEntry = null;
-}
+function closeViewModal() { hideModal('view-modal'); currentEntry = null; }
 
-// ── Modal helpers ──────────────────────────────────────────
-function showModal(id) {
-  const modal = document.getElementById(id);
-  modal.classList.remove('hidden');
-  requestAnimationFrame(() =>
-    modal.querySelector('.modal-content').classList.add('slide-up')
-  );
-}
-
-function hideModal(id) {
-  const modal = document.getElementById(id);
-  const content = modal.querySelector('.modal-content');
-  content.classList.remove('slide-up');
-  content.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
-}
-
-// ── Boot ──────────────────────────────────────────────────
+// ── Init ───────────────────────────────────────────────
 async function init() {
   db = await openDB();
   await renderGallery();
 
-  if ('serviceWorker' in navigator) {
+  if ('serviceWorker' in navigator)
     navigator.serviceWorker.register('./sw.js').catch(console.error);
-  }
 
+  // FAB → open modal
   document.getElementById('capture-btn').addEventListener('click', openCaptureModal);
   document.getElementById('cancel-btn').addEventListener('click', closeCaptureModal);
 
-  document.getElementById('camera-input').addEventListener('change', e =>
-    handleFileSelected(e.target.files[0])
+  // Source picker buttons trigger the hidden file inputs
+  document.getElementById('open-camera-btn').addEventListener('click', () =>
+    document.getElementById('camera-input').click()
+  );
+  document.getElementById('open-gallery-btn').addEventListener('click', () =>
+    document.getElementById('gallery-input').click()
   );
 
-  document.getElementById('gallery-input').addEventListener('change', e =>
-    handleFileSelected(e.target.files[0])
-  );
+  // File inputs (outside the modal, always in DOM)
+  document.getElementById('camera-input').addEventListener('change', e => handleFile(e.target.files[0]));
+  document.getElementById('gallery-input').addEventListener('change', e => handleFile(e.target.files[0]));
 
-  // "Välj nytt" button re-shows source picker
+  // Retake
   document.getElementById('retake-btn').addEventListener('click', () => {
     pendingImage = null;
     document.getElementById('camera-input').value = '';
@@ -193,17 +172,15 @@ async function init() {
     document.getElementById('save-btn').disabled = true;
   });
 
+  // Save new entry
   document.getElementById('save-btn').addEventListener('click', async () => {
     if (!pendingImage) return;
-    await addEntry({
-      image: pendingImage,
-      note: document.getElementById('note-input').value.trim(),
-      timestamp: Date.now()
-    });
+    await addEntry({ image: pendingImage, note: document.getElementById('note-input').value.trim(), timestamp: Date.now() });
     closeCaptureModal();
     await renderGallery();
   });
 
+  // View modal
   document.getElementById('close-btn').addEventListener('click', closeViewModal);
 
   document.getElementById('update-btn').addEventListener('click', async () => {
@@ -222,13 +199,13 @@ async function init() {
     await renderGallery();
   });
 
-  document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', (e) => {
+  // Backdrop to close
+  document.querySelectorAll('.modal').forEach(modal =>
+    modal.addEventListener('click', e => {
       if (e.target !== modal) return;
-      if (modal.id === 'capture-modal') closeCaptureModal();
-      else closeViewModal();
-    });
-  });
+      modal.id === 'capture-modal' ? closeCaptureModal() : closeViewModal();
+    })
+  );
 }
 
 init().catch(console.error);
