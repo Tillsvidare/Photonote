@@ -56,66 +56,62 @@ function compress(dataUrl, maxDim = 1400, q = 0.88) {
   });
 }
 
-// Skapar en kompositbild med anteckningen inbakad längst ner
+// Delar upp text i rader med hänsyn till både \n och max bredd
+function splitLines(ctx, text, maxWidth) {
+  const result = [];
+  for (const para of text.split('\n')) {
+    if (para.trim() === '') { result.push(''); continue; }
+    const words = para.split(' ');
+    let current = '';
+    for (const word of words) {
+      const test = current ? current + ' ' + word : word;
+      if (ctx.measureText(test).width > maxWidth && current) {
+        result.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
+    }
+    if (current) result.push(current);
+  }
+  return result;
+}
+
 function buildComposite(imageDataUrl, note) {
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
       const w = img.width;
       const fontSize = Math.max(24, Math.round(w * 0.038));
-      const padding = Math.round(w * 0.04);
-      const lineHeight = Math.round(fontSize * 1.45);
+      const padding = Math.round(w * 0.045);
+      const lineHeight = Math.round(fontSize * 1.5);
 
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
+      ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
 
-      // Mät upp textrader för att beräkna höjd på notesträngen
-      ctx.font = `${fontSize}px -apple-system, sans-serif`;
-      const maxTextWidth = w - padding * 2;
-      const lines = note ? wrapText(ctx, note, maxTextWidth) : [];
-      const noteStripH = note ? padding * 1.5 + lines.length * lineHeight + padding : 0;
+      const lines = note ? splitLines(ctx, note, w - padding * 2) : [];
+      const stripH = lines.length > 0 ? padding + lines.length * lineHeight + padding : 0;
 
       canvas.width = w;
-      canvas.height = img.height + noteStripH;
-
-      // Rita bilden
+      canvas.height = img.height + stripH;
       ctx.drawImage(img, 0, 0);
 
-      if (note && lines.length > 0) {
-        // Mörk bakgrund för texten
-        ctx.fillStyle = 'rgba(15, 15, 25, 0.92)';
-        ctx.fillRect(0, img.height, w, noteStripH);
-
-        // Anteckningstexten
+      if (lines.length > 0) {
+        ctx.fillStyle = 'rgba(15,15,25,0.93)';
+        ctx.fillRect(0, img.height, w, stripH);
         ctx.fillStyle = '#e8e8f0';
         ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
         ctx.textBaseline = 'top';
-        lines.forEach((line, i) => {
-          ctx.fillText(line, padding, img.height + padding * 1.2 + i * lineHeight);
-        });
+        lines.forEach((line, i) =>
+          ctx.fillText(line, padding, img.height + padding + i * lineHeight)
+        );
       }
 
       resolve(canvas.toDataURL('image/jpeg', 0.92));
     };
     img.src = imageDataUrl;
   });
-}
-
-function wrapText(ctx, text, maxWidth) {
-  const words = text.split(' ');
-  const lines = [];
-  let current = '';
-  for (const word of words) {
-    const test = current ? current + ' ' + word : word;
-    if (ctx.measureText(test).width > maxWidth && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = test;
-    }
-  }
-  if (current) lines.push(current);
-  return lines;
 }
 
 function triggerDownload(dataUrl, filename) {
@@ -129,16 +125,25 @@ function triggerDownload(dataUrl, filename) {
 
 function dateFilename() {
   const d = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  return `photonote-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.jpg`;
+  const p = n => String(n).padStart(2, '0');
+  return `photonote-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.jpg`;
 }
 
 function formatDate(ts) {
   return new Date(ts).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-function esc(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function escHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Bevara radbrytningar vid visning
+function noteToHtml(note) {
+  return note ? escHtml(note).replace(/\n/g, '<br>') : '<em>Ingen anteckning</em>';
 }
 
 async function renderGallery() {
@@ -152,7 +157,7 @@ async function renderGallery() {
     <article class="card" data-id="${e.id}">
       <div class="card-img-wrap"><img src="${e.image}" alt="Foto" loading="lazy"></div>
       <div class="card-body">
-        <p class="card-note">${e.note ? esc(e.note) : '<em>Ingen anteckning</em>'}</p>
+        <p class="card-note">${noteToHtml(e.note)}</p>
         <time class="card-date">${formatDate(e.timestamp)}</time>
       </div>
     </article>`).join('');
@@ -175,31 +180,19 @@ function hideModal(id) {
   content.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
 }
 
-// ── Capture modal ───────────────────────────────────
+// ── Capture ──────────────────────────────────────────
 let pendingImage = null;
-
-function openCaptureModal() {
-  pendingImage = null;
-  document.getElementById('source-picker').classList.remove('hidden');
-  document.getElementById('preview-area').classList.add('hidden');
-  document.getElementById('note-input').value = '';
-  document.getElementById('save-btn').disabled = true;
-  document.getElementById('camera-input').value = '';
-  document.getElementById('gallery-input').value = '';
-  showModal('capture-modal');
-}
-
-function closeCaptureModal() { hideModal('capture-modal'); }
 
 async function handleFile(file) {
   if (!file) return;
   const raw = await readFile(file);
   pendingImage = await compress(raw);
   document.getElementById('preview-img').src = pendingImage;
-  document.getElementById('source-picker').classList.add('hidden');
-  document.getElementById('preview-area').classList.remove('hidden');
-  document.getElementById('save-btn').disabled = false;
+  document.getElementById('note-input').value = '';
+  showModal('capture-modal');
 }
+
+function closeCaptureModal() { hideModal('capture-modal'); pendingImage = null; }
 
 // ── View modal ──────────────────────────────────────
 let currentEntry = null;
@@ -223,43 +216,33 @@ async function init() {
   if ('serviceWorker' in navigator)
     navigator.serviceWorker.register('./sw.js').catch(console.error);
 
-  document.getElementById('capture-btn').addEventListener('click', openCaptureModal);
-  document.getElementById('cancel-btn').addEventListener('click', closeCaptureModal);
+  // FAB → direkt till kameran
+  document.getElementById('capture-btn').addEventListener('click', () => {
+    document.getElementById('camera-input').value = '';
+    document.getElementById('camera-input').click();
+  });
 
-  document.getElementById('open-camera-btn').addEventListener('click', () =>
-    document.getElementById('camera-input').click()
+  document.getElementById('camera-input').addEventListener('change', e =>
+    handleFile(e.target.files[0])
   );
-  document.getElementById('open-gallery-btn').addEventListener('click', () =>
-    document.getElementById('gallery-input').click()
-  );
-
-  document.getElementById('camera-input').addEventListener('change', e => handleFile(e.target.files[0]));
-  document.getElementById('gallery-input').addEventListener('change', e => handleFile(e.target.files[0]));
 
   document.getElementById('retake-btn').addEventListener('click', () => {
-    pendingImage = null;
     document.getElementById('camera-input').value = '';
-    document.getElementById('gallery-input').value = '';
-    document.getElementById('preview-area').classList.add('hidden');
-    document.getElementById('source-picker').classList.remove('hidden');
-    document.getElementById('save-btn').disabled = true;
+    document.getElementById('camera-input').click();
   });
+
+  document.getElementById('cancel-btn').addEventListener('click', closeCaptureModal);
 
   document.getElementById('save-btn').addEventListener('click', async () => {
     if (!pendingImage) return;
     const note = document.getElementById('note-input').value.trim();
-    const entry = { image: pendingImage, note, timestamp: Date.now() };
-    await addEntry(entry);
-
-    // Bygg kompositbild och ladda ner till telefonen
+    await addEntry({ image: pendingImage, note, timestamp: Date.now() });
     const composite = await buildComposite(pendingImage, note);
     triggerDownload(composite, dateFilename());
-
     closeCaptureModal();
     await renderGallery();
   });
 
-  // View modal
   document.getElementById('close-btn').addEventListener('click', closeViewModal);
 
   document.getElementById('update-btn').addEventListener('click', async () => {
@@ -278,7 +261,6 @@ async function init() {
     await renderGallery();
   });
 
-  // Ladda ner-knapp i view modal
   document.getElementById('download-btn').addEventListener('click', async () => {
     if (!currentEntry) return;
     const composite = await buildComposite(currentEntry.image, currentEntry.note);

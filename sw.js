@@ -1,4 +1,4 @@
-const CACHE = 'photonote-v4';
+const CACHE = 'photonote-v5';
 
 self.addEventListener('install', () => self.skipWaiting());
 
