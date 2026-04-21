@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#533483">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Photonote">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+  <title>Photonote</title>
+</head>
+<body>
+
+  <header>
+    <h1>Photonote</h1>
+  </header>
+
+  <main id="gallery" class="gallery"></main>
+
+  <button id="capture-btn" class="fab" aria-label="Ta foto">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>
+  </button>
+
+  <!-- Modal: ta foto -->
+  <div id="capture-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Ta nytt foto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Nytt foto</h2>
+      </div>
+      <div class="preview-area">
+        <img id="preview-img" class="hidden" alt="Förhandsgranskning">
+        <label id="capture-label" class="capture-placeholder">
+          <input type="file" id="file-input" accept="image/*">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span>Tryck för att ta foto eller välj från galleriet</span>
+        </label>
+      </div>
+      <div class="note-section">
+        <textarea id="note-input" placeholder="Skriv en anteckning..." rows="3" maxlength="1000"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button id="cancel-btn" class="btn btn-secondary">Avbryt</button>
+        <button id="save-btn" class="btn btn-primary" disabled>Spara</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: visa/redigera -->
+  <div id="view-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Visa foto">
+    <div class="modal-content view-modal-content">
+      <img id="view-img" alt="Foto">
+      <div class="note-section">
+        <textarea id="view-note" placeholder="Skriv en anteckning..." rows="4" maxlength="1000"></textarea>
+      </div>
+      <div class="view-date" id="view-date"></div>
+      <div class="modal-actions">
+        <button id="delete-btn" class="btn btn-danger">Radera</button>
+        <div class="action-right">
+          <button id="close-btn" class="btn btn-secondary">Stäng</button>
+          <button id="update-btn" class="btn btn-primary">Spara</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
