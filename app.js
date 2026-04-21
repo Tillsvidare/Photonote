@@ -41,7 +41,7 @@ function readFile(file) {
   });
 }
 
-function compress(dataUrl, maxDim = 1400, q = 0.82) {
+function compress(dataUrl, maxDim = 1400, q = 0.88) {
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
@@ -54,6 +54,83 @@ function compress(dataUrl, maxDim = 1400, q = 0.82) {
     };
     img.src = dataUrl;
   });
+}
+
+// Skapar en kompositbild med anteckningen inbakad längst ner
+function buildComposite(imageDataUrl, note) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const w = img.width;
+      const fontSize = Math.max(24, Math.round(w * 0.038));
+      const padding = Math.round(w * 0.04);
+      const lineHeight = Math.round(fontSize * 1.45);
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Mät upp textrader för att beräkna höjd på notesträngen
+      ctx.font = `${fontSize}px -apple-system, sans-serif`;
+      const maxTextWidth = w - padding * 2;
+      const lines = note ? wrapText(ctx, note, maxTextWidth) : [];
+      const noteStripH = note ? padding * 1.5 + lines.length * lineHeight + padding : 0;
+
+      canvas.width = w;
+      canvas.height = img.height + noteStripH;
+
+      // Rita bilden
+      ctx.drawImage(img, 0, 0);
+
+      if (note && lines.length > 0) {
+        // Mörk bakgrund för texten
+        ctx.fillStyle = 'rgba(15, 15, 25, 0.92)';
+        ctx.fillRect(0, img.height, w, noteStripH);
+
+        // Anteckningstexten
+        ctx.fillStyle = '#e8e8f0';
+        ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+        ctx.textBaseline = 'top';
+        lines.forEach((line, i) => {
+          ctx.fillText(line, padding, img.height + padding * 1.2 + i * lineHeight);
+        });
+      }
+
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.src = imageDataUrl;
+  });
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let current = '';
+  for (const word of words) {
+    const test = current ? current + ' ' + word : word;
+    if (ctx.measureText(test).width > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = test;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+function triggerDownload(dataUrl, filename) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function dateFilename() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `photonote-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.jpg`;
 }
 
 function formatDate(ts) {
@@ -84,7 +161,7 @@ async function renderGallery() {
   );
 }
 
-// ── Modal helpers ─────────────────────────────────────
+// ── Modal helpers ────────────────────────────────────
 function showModal(id) {
   const modal = document.getElementById(id);
   modal.classList.remove('hidden');
@@ -98,7 +175,7 @@ function hideModal(id) {
   content.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
 }
 
-// ── Capture modal ─────────────────────────────────────
+// ── Capture modal ───────────────────────────────────
 let pendingImage = null;
 
 function openCaptureModal() {
@@ -124,7 +201,7 @@ async function handleFile(file) {
   document.getElementById('save-btn').disabled = false;
 }
 
-// ── View modal ────────────────────────────────────────
+// ── View modal ──────────────────────────────────────
 let currentEntry = null;
 
 async function openViewModal(id) {
@@ -138,7 +215,7 @@ async function openViewModal(id) {
 
 function closeViewModal() { hideModal('view-modal'); currentEntry = null; }
 
-// ── Init ───────────────────────────────────────────────
+// ── Init ────────────────────────────────────────────
 async function init() {
   db = await openDB();
   await renderGallery();
@@ -146,11 +223,9 @@ async function init() {
   if ('serviceWorker' in navigator)
     navigator.serviceWorker.register('./sw.js').catch(console.error);
 
-  // FAB → open modal
   document.getElementById('capture-btn').addEventListener('click', openCaptureModal);
   document.getElementById('cancel-btn').addEventListener('click', closeCaptureModal);
 
-  // Source picker buttons trigger the hidden file inputs
   document.getElementById('open-camera-btn').addEventListener('click', () =>
     document.getElementById('camera-input').click()
   );
@@ -158,11 +233,9 @@ async function init() {
     document.getElementById('gallery-input').click()
   );
 
-  // File inputs (outside the modal, always in DOM)
   document.getElementById('camera-input').addEventListener('change', e => handleFile(e.target.files[0]));
   document.getElementById('gallery-input').addEventListener('change', e => handleFile(e.target.files[0]));
 
-  // Retake
   document.getElementById('retake-btn').addEventListener('click', () => {
     pendingImage = null;
     document.getElementById('camera-input').value = '';
@@ -172,10 +245,16 @@ async function init() {
     document.getElementById('save-btn').disabled = true;
   });
 
-  // Save new entry
   document.getElementById('save-btn').addEventListener('click', async () => {
     if (!pendingImage) return;
-    await addEntry({ image: pendingImage, note: document.getElementById('note-input').value.trim(), timestamp: Date.now() });
+    const note = document.getElementById('note-input').value.trim();
+    const entry = { image: pendingImage, note, timestamp: Date.now() };
+    await addEntry(entry);
+
+    // Bygg kompositbild och ladda ner till telefonen
+    const composite = await buildComposite(pendingImage, note);
+    triggerDownload(composite, dateFilename());
+
     closeCaptureModal();
     await renderGallery();
   });
@@ -199,7 +278,13 @@ async function init() {
     await renderGallery();
   });
 
-  // Backdrop to close
+  // Ladda ner-knapp i view modal
+  document.getElementById('download-btn').addEventListener('click', async () => {
+    if (!currentEntry) return;
+    const composite = await buildComposite(currentEntry.image, currentEntry.note);
+    triggerDownload(composite, dateFilename());
+  });
+
   document.querySelectorAll('.modal').forEach(modal =>
     modal.addEventListener('click', e => {
       if (e.target !== modal) return;

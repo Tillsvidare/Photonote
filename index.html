@@ -17,7 +17,7 @@
 
   <header>
     <h1>Photonote</h1>
-    <span class="version">v3</span>
+    <span class="version">v4</span>
   </header>
 
   <main id="gallery" class="gallery"></main>
@@ -29,7 +29,6 @@
     </svg>
   </button>
 
-  <!-- Dolda file inputs utanför modal så de alltid finns i DOM -->
   <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none">
   <input type="file" id="gallery-input" accept="image/*" style="display:none">
 
@@ -62,11 +61,13 @@
       </div>
 
       <div class="note-section">
-        <textarea id="note-input" placeholder="Skriv en anteckning..." rows="3" maxlength="1000"></textarea>
+        <textarea id="note-input" placeholder="Skriv en anteckning (syns i den sparade bilden)..." rows="3" maxlength="500"></textarea>
       </div>
       <div class="modal-actions">
         <button id="cancel-btn" class="btn btn-secondary">Avbryt</button>
-        <button id="save-btn" class="btn btn-primary" disabled>Spara</button>
+        <button id="save-btn" class="btn btn-primary" disabled>
+          Spara &amp; ladda ner
+        </button>
       </div>
     </div>
   </div>
@@ -76,14 +77,22 @@
     <div class="modal-content view-modal-content">
       <img id="view-img" alt="Foto">
       <div class="note-section">
-        <textarea id="view-note" placeholder="Skriv en anteckning..." rows="4" maxlength="1000"></textarea>
+        <textarea id="view-note" placeholder="Skriv en anteckning..." rows="3" maxlength="500"></textarea>
       </div>
       <div class="view-date" id="view-date"></div>
       <div class="modal-actions">
         <button id="delete-btn" class="btn btn-danger">Radera</button>
         <div class="action-right">
+          <button id="download-btn" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="vertical-align:middle;margin-right:4px">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Spara
+          </button>
           <button id="close-btn" class="btn btn-secondary">Stäng</button>
-          <button id="update-btn" class="btn btn-primary">Spara</button>
+          <button id="update-btn" class="btn btn-primary">Uppdatera</button>
         </div>
       </div>
     </div>
