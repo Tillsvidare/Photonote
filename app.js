@@ -102,16 +102,17 @@ async function renderGallery() {
   });
 }
 
-// ── Capture modal ──────────────────────────────────────────
+// ── Capture modal ─────────────────────────────────────────
 let pendingImage = null;
 
 function openCaptureModal() {
   pendingImage = null;
-  document.getElementById('preview-img').classList.add('hidden');
-  document.getElementById('capture-label').classList.remove('hidden');
+  document.getElementById('source-picker').classList.remove('hidden');
+  document.getElementById('preview-area').classList.add('hidden');
   document.getElementById('note-input').value = '';
   document.getElementById('save-btn').disabled = true;
-  document.getElementById('file-input').value = '';
+  document.getElementById('camera-input').value = '';
+  document.getElementById('gallery-input').value = '';
   showModal('capture-modal');
 }
 
@@ -119,7 +120,17 @@ function closeCaptureModal() {
   hideModal('capture-modal');
 }
 
-// ── View modal ─────────────────────────────────────────────
+async function handleFileSelected(file) {
+  if (!file) return;
+  const raw = await readFileAsDataURL(file);
+  pendingImage = await compressImage(raw);
+  document.getElementById('preview-img').src = pendingImage;
+  document.getElementById('source-picker').classList.add('hidden');
+  document.getElementById('preview-area').classList.remove('hidden');
+  document.getElementById('save-btn').disabled = false;
+}
+
+// ── View modal ────────────────────────────────────────────
 let currentEntry = null;
 
 async function openViewModal(id) {
@@ -152,7 +163,7 @@ function hideModal(id) {
   content.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
 }
 
-// ── Boot ───────────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────
 async function init() {
   db = await openDB();
   await renderGallery();
@@ -164,21 +175,22 @@ async function init() {
   document.getElementById('capture-btn').addEventListener('click', openCaptureModal);
   document.getElementById('cancel-btn').addEventListener('click', closeCaptureModal);
 
-  document.getElementById('file-input').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const raw = await readFileAsDataURL(file);
-    pendingImage = await compressImage(raw);
-    const preview = document.getElementById('preview-img');
-    preview.src = pendingImage;
-    preview.classList.remove('hidden');
-    document.getElementById('capture-label').classList.add('hidden');
-    document.getElementById('save-btn').disabled = false;
-  });
+  document.getElementById('camera-input').addEventListener('change', e =>
+    handleFileSelected(e.target.files[0])
+  );
 
-  // Clicking the preview re-opens file picker
-  document.getElementById('preview-img').addEventListener('click', () => {
-    document.getElementById('file-input').click();
+  document.getElementById('gallery-input').addEventListener('change', e =>
+    handleFileSelected(e.target.files[0])
+  );
+
+  // "Välj nytt" button re-shows source picker
+  document.getElementById('retake-btn').addEventListener('click', () => {
+    pendingImage = null;
+    document.getElementById('camera-input').value = '';
+    document.getElementById('gallery-input').value = '';
+    document.getElementById('preview-area').classList.add('hidden');
+    document.getElementById('source-picker').classList.remove('hidden');
+    document.getElementById('save-btn').disabled = true;
   });
 
   document.getElementById('save-btn').addEventListener('click', async () => {
@@ -210,7 +222,6 @@ async function init() {
     await renderGallery();
   });
 
-  // Close on backdrop click
   document.querySelectorAll('.modal').forEach(modal => {
     modal.addEventListener('click', (e) => {
       if (e.target !== modal) return;

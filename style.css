@@ -18,9 +18,7 @@
   --radius-sm: 10px;
 }
 
-html, body {
-  height: 100%;
-}
+html, body { height: 100%; }
 
 body {
   background: var(--bg);
@@ -98,9 +96,7 @@ header h1 {
   display: block;
 }
 
-.card-body {
-  padding: 8px 10px 10px;
-}
+.card-body { padding: 8px 10px 10px; }
 
 .card-note {
   font-size: 0.78rem;
@@ -113,10 +109,7 @@ header h1 {
   margin-bottom: 4px;
 }
 
-.card-note em {
-  color: var(--text-muted);
-  font-style: normal;
-}
+.card-note em { color: var(--text-muted); font-style: normal; }
 
 .card-date {
   font-size: 0.68rem;
@@ -136,7 +129,7 @@ header h1 {
 }
 
 .empty-icon { font-size: 3rem; margin-bottom: 4px; }
-.empty-state p { font-size: 1rem; color: var(--text); }
+.empty-state p { font-size: 1rem; }
 .empty-state small { font-size: 0.85rem; color: var(--text-muted); }
 
 /* FAB */
@@ -161,11 +154,7 @@ header h1 {
 }
 
 .fab svg { width: 26px; height: 26px; }
-
-.fab:active {
-  transform: scale(0.9);
-  box-shadow: 0 2px 12px rgba(83, 52, 131, 0.4);
-}
+.fab:active { transform: scale(0.9); box-shadow: 0 2px 12px rgba(83, 52, 131, 0.4); }
 
 /* Modal */
 .modal {
@@ -195,7 +184,7 @@ header h1 {
 .modal-content.slide-up { transform: translateY(0); }
 
 .modal-header {
-  padding: 18px 20px 10px;
+  padding: 18px 20px 12px;
 }
 
 .modal-header h2 {
@@ -203,46 +192,38 @@ header h1 {
   font-weight: 600;
 }
 
-/* Preview */
-.preview-area {
-  margin: 0 16px;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  background: var(--surface2);
-  min-height: 160px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Source picker */
+.source-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 16px 4px;
 }
 
-#preview-img {
-  width: 100%;
-  max-height: 280px;
-  object-fit: contain;
-  display: block;
-}
-
-#preview-img.hidden { display: none; }
-
-.capture-placeholder {
+.source-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 40px 20px;
-  width: 100%;
+  gap: 10px;
+  padding: 24px 12px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  border: 1.5px solid rgba(255,255,255,0.06);
+  transition: border-color 0.15s, background 0.15s;
   -webkit-tap-highlight-color: transparent;
-  line-height: 1.5;
 }
 
-.capture-placeholder.hidden { display: none; }
+.source-btn:active {
+  background: rgba(83, 52, 131, 0.2);
+  border-color: var(--accent);
+}
 
-.capture-placeholder input[type="file"] {
+.source-btn input[type="file"] {
   position: absolute;
   opacity: 0;
   pointer-events: none;
@@ -250,7 +231,44 @@ header h1 {
   height: 0;
 }
 
-.capture-placeholder svg { opacity: 0.45; }
+.source-btn svg { opacity: 0.75; }
+
+/* Preview */
+.preview-area {
+  margin: 8px 16px 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface2);
+  position: relative;
+}
+
+.preview-area.hidden { display: none; }
+
+#preview-img {
+  width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  display: block;
+}
+
+.retake-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  border: none;
+  border-radius: 20px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* Note input */
 .note-section { padding: 12px 16px; }
@@ -298,13 +316,7 @@ textarea:focus { border-color: var(--accent); }
 }
 
 .btn:active { transform: scale(0.95); }
-
-.btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-  transform: none;
-}
-
+.btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 .btn-primary { background: var(--accent); color: #fff; }
 .btn-primary:not(:disabled):hover { background: var(--accent-hover); }
 .btn-secondary { background: rgba(255, 255, 255, 0.08); color: var(--text); }
@@ -325,7 +337,6 @@ textarea:focus { border-color: var(--accent); }
   color: var(--text-muted);
 }
 
-/* Safe area (notch/home bar) */
 @supports (padding: max(0px)) {
   .modal-actions {
     padding-bottom: max(24px, calc(env(safe-area-inset-bottom) + 8px));
