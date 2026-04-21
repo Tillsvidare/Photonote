@@ -17,28 +17,29 @@
 
   <header>
     <h1>Photonote</h1>
-    <span class="version">v5</span>
+    <span class="version">v6</span>
   </header>
 
   <main id="gallery" class="gallery"></main>
 
-  <button id="capture-btn" class="fab" aria-label="Ta foto">
+  <!-- FAB är ett label → triggar kameran utan JS-mellanhand -->
+  <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none">
+  <label for="camera-input" class="fab" aria-label="Ta foto">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
       <circle cx="12" cy="13" r="4"/>
     </svg>
-  </button>
-
-  <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none">
+  </label>
 
   <!-- Modal: foto + anteckning -->
   <div id="capture-modal" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header"><h2>Nytt foto</h2></div>
 
-      <div id="preview-area" class="preview-area">
+      <div class="preview-area">
         <img id="preview-img" alt="Förhandsgranskning">
-        <button id="retake-btn" class="retake-btn">Välj nytt</button>
+        <!-- Retake är också ett label -->
+        <label for="camera-input" class="retake-btn">Välj nytt</label>
       </div>
 
       <div class="note-section">

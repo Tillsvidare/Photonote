@@ -56,7 +56,6 @@ function compress(dataUrl, maxDim = 1400, q = 0.88) {
   });
 }
 
-// Delar upp text i rader med hänsyn till både \n och max bredd
 function splitLines(ctx, text, maxWidth) {
   const result = [];
   for (const para of text.split('\n')) {
@@ -134,14 +133,9 @@ function formatDate(ts) {
 }
 
 function escHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Bevara radbrytningar vid visning
 function noteToHtml(note) {
   return note ? escHtml(note).replace(/\n/g, '<br>') : '<em>Ingen anteckning</em>';
 }
@@ -166,7 +160,6 @@ async function renderGallery() {
   );
 }
 
-// ── Modal helpers ────────────────────────────────────
 function showModal(id) {
   const modal = document.getElementById(id);
   modal.classList.remove('hidden');
@@ -180,21 +173,13 @@ function hideModal(id) {
   content.addEventListener('transitionend', () => modal.classList.add('hidden'), { once: true });
 }
 
-// ── Capture ──────────────────────────────────────────
 let pendingImage = null;
 
-async function handleFile(file) {
-  if (!file) return;
-  const raw = await readFile(file);
-  pendingImage = await compress(raw);
-  document.getElementById('preview-img').src = pendingImage;
-  document.getElementById('note-input').value = '';
-  showModal('capture-modal');
+function closeCaptureModal() {
+  hideModal('capture-modal');
+  pendingImage = null;
 }
 
-function closeCaptureModal() { hideModal('capture-modal'); pendingImage = null; }
-
-// ── View modal ──────────────────────────────────────
 let currentEntry = null;
 
 async function openViewModal(id) {
@@ -208,7 +193,6 @@ async function openViewModal(id) {
 
 function closeViewModal() { hideModal('view-modal'); currentEntry = null; }
 
-// ── Init ────────────────────────────────────────────
 async function init() {
   db = await openDB();
   await renderGallery();
@@ -216,19 +200,17 @@ async function init() {
   if ('serviceWorker' in navigator)
     navigator.serviceWorker.register('./sw.js').catch(console.error);
 
-  // FAB → direkt till kameran
-  document.getElementById('capture-btn').addEventListener('click', () => {
-    document.getElementById('camera-input').value = '';
-    document.getElementById('camera-input').click();
-  });
-
-  document.getElementById('camera-input').addEventListener('change', e =>
-    handleFile(e.target.files[0])
-  );
-
-  document.getElementById('retake-btn').addEventListener('click', () => {
-    document.getElementById('camera-input').value = '';
-    document.getElementById('camera-input').click();
+  // File input ändras när användaren tagit/valt ett foto
+  document.getElementById('camera-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const raw = await readFile(file);
+    pendingImage = await compress(raw);
+    document.getElementById('preview-img').src = pendingImage;
+    document.getElementById('note-input').value = '';
+    // Återställ input så samma foto kan väljas igen efter "Välj nytt"
+    e.target.value = '';
+    showModal('capture-modal');
   });
 
   document.getElementById('cancel-btn').addEventListener('click', closeCaptureModal);
