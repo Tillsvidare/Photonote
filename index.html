@@ -17,31 +17,36 @@
 
   <header>
     <h1>Photonote</h1>
-    <span class="version">v6</span>
+    <span class="version">v7</span>
   </header>
 
   <main id="gallery" class="gallery"></main>
 
-  <!-- FAB är ett label → triggar kameran utan JS-mellanhand -->
-  <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none">
-  <label for="camera-input" class="fab" aria-label="Ta foto">
+  <button id="capture-btn" class="fab" aria-label="Ta foto">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
       <circle cx="12" cy="13" r="4"/>
     </svg>
-  </label>
+  </button>
 
-  <!-- Modal: foto + anteckning -->
+  <!-- In-app kameravy (getUserMedia) -->
+  <div id="camera-view" class="camera-view hidden">
+    <video id="cam-video" autoplay playsinline muted></video>
+    <button id="cam-close" class="cam-close" aria-label="Stäng">&#x2715;</button>
+    <button id="cam-shutter" class="cam-shutter" aria-label="Ta foto"></button>
+  </div>
+
+  <!-- Fallback file input om getUserMedia saknas -->
+  <input type="file" id="file-fallback" accept="image/*" capture="environment" style="display:none">
+
+  <!-- Modal: förhandsgranskning + anteckning -->
   <div id="capture-modal" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header"><h2>Nytt foto</h2></div>
-
       <div class="preview-area">
         <img id="preview-img" alt="Förhandsgranskning">
-        <!-- Retake är också ett label -->
-        <label for="camera-input" class="retake-btn">Välj nytt</label>
+        <button id="retake-btn" class="retake-btn">Ta om</button>
       </div>
-
       <div class="note-section">
         <textarea id="note-input" placeholder="Skriv en anteckning (syns i den sparade bilden)..." rows="4" maxlength="500"></textarea>
       </div>
@@ -64,11 +69,7 @@
         <button id="delete-btn" class="btn btn-danger">Radera</button>
         <div class="action-right">
           <button id="download-btn" class="btn btn-secondary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" style="vertical-align:middle;margin-right:3px">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>Spara
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" style="vertical-align:middle;margin-right:3px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Spara
           </button>
           <button id="close-btn" class="btn btn-secondary">Stäng</button>
           <button id="update-btn" class="btn btn-primary">Uppdatera</button>
