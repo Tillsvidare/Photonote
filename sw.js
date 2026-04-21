@@ -1,4 +1,4 @@
-const CACHE = 'photonote-v1';
+const CACHE = 'photonote-v2';
 const ASSETS = [
   './',
   './index.html',
